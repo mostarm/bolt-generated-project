@@ -1,27 +1,36 @@
-import { useState } from 'react'
-import { Box, Typography, Switch, FormControlLabel } from '@mui/material'
-import useStore from '../store/useStore'
+import React, { useState } from 'react'
+import { Container, Switch, Text } from '@mantine/core'
+import { talks, speakers } from '../data/conferenceData'
+import TalkCard from '../components/TalkCard'
+import useFavoriteStore from '../store/favoriteStore'
 
-function Agenda() {
+export default function Agenda() {
   const [showFavorites, setShowFavorites] = useState(false)
+  const { favorites } = useFavoriteStore()
+  
+  const currentTime = new Date()
+  const filteredTalks = showFavorites 
+    ? talks.filter(talk => favorites.includes(talk.id))
+    : talks
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Agenda
-      </Typography>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={showFavorites}
-            onChange={(e) => setShowFavorites(e.target.checked)}
-          />
-        }
-        label="Show Favorites Only"
+    <Container>
+      <Switch
+        label="Show favorites only"
+        checked={showFavorites}
+        onChange={(event) => setShowFavorites(event.currentTarget.checked)}
+        mb="md"
       />
-      {/* Agenda content will be implemented next */}
-    </Box>
+
+      {filteredTalks.map(talk => (
+        <TalkCard
+          key={talk.id}
+          talk={talk}
+          speaker={speakers.find(s => s.id === talk.speakerId)}
+          isCurrentTalk={new Date(talk.time) <= currentTime && 
+            new Date(talk.time).getTime() + talk.duration * 60000 > currentTime.getTime()}
+        />
+      ))}
+    </Container>
   )
 }
-
-export default Agenda

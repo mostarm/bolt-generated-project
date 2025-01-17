@@ -1,31 +1,19 @@
-import { useLocation, useNavigate } from 'react-router-dom'
-import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material'
-import {
-  Today as AgendaIcon,
-  People as SpeakersIcon,
-  Business as SponsorsIcon,
-  Notifications as NotificationsIcon,
-  More as MoreIcon
-} from '@mui/icons-material'
+import { Tabs } from '@mantine/core'
+import { IconCalendar, IconUsers, IconStar, IconBuildingStore, IconDotsCircleHorizontal } from '@tabler/icons-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 
-function Navigation() {
-  const location = useLocation()
+export default function Navigation() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   return (
-    <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
-      <BottomNavigation
-        value={location.pathname}
-        onChange={(_, newValue) => navigate(newValue)}
-      >
-        <BottomNavigationAction label="Agenda" value="/" icon={<AgendaIcon />} />
-        <BottomNavigationAction label="Speakers" value="/speakers" icon={<SpeakersIcon />} />
-        <BottomNavigationAction label="Sponsors" value="/sponsors" icon={<SponsorsIcon />} />
-        <BottomNavigationAction label="Notifications" value="/notifications" icon={<NotificationsIcon />} />
-        <BottomNavigationAction label="More" value="/more" icon={<MoreIcon />} />
-      </BottomNavigation>
-    </Paper>
+    <Tabs value={location.pathname} onTabChange={(value) => navigate(value)}>
+      <Tabs.List grow>
+        <Tabs.Tab value="/" icon={<IconCalendar size={14} />}>Agenda</Tabs.Tab>
+        <Tabs.Tab value="/speakers" icon={<IconUsers size={14} />}>Speakers</Tabs.Tab>
+        <Tabs.Tab value="/sponsors" icon={<IconBuildingStore size={14} />}>Sponsors</Tabs.Tab>
+        <Tabs.Tab value="/more" icon={<IconDotsCircleHorizontal size={14} />}>More</Tabs.Tab>
+      </Tabs.List>
+    </Tabs>
   )
 }
-
-export default Navigation
