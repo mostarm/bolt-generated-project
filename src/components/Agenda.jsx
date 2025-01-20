@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { agenda } from '../data/agenda';
 import { 
   Box, 
@@ -18,91 +18,27 @@ import {
   Avatar,
   Divider,
   Stack,
+  Grid,
   LinearProgress
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import RoomIcon from '@mui/icons-material/Room';
-import PersonIcon from '@mui/icons-material/Person';
-import { format, parseISO, addMinutes, differenceInMinutes, differenceInSeconds } from 'date-fns';
 import { speakers } from '../data/speakers';
 
-function TimeProgress({ startTime, duration }) {
-  const [progress, setProgress] = useState(0);
-  const [timeLeft, setTimeLeft] = useState('');
-
-  useEffect(() => {
-    const updateProgress = () => {
-      const now = new Date();
-      const start = parseISO(startTime);
-      const end = addMinutes(start, duration);
-
-      // Calculate progress
-      const totalDuration = duration * 60; // in seconds
-      const elapsed = differenceInSeconds(now, start);
-      const progressValue = (elapsed / totalDuration) * 100;
-      
-      // Calculate time left
-      const minutesLeft = differenceInMinutes(end, now);
-      
-      if (minutesLeft > 0) {
-        setTimeLeft(`${minutesLeft} min left`);
-        setProgress(Math.min(progressValue, 100));
-      } else {
-        setTimeLeft('Ended');
-        setProgress(100);
-      }
-    };
-
-    updateProgress();
-    const timer = setInterval(updateProgress, 1000);
-
-    return () => clearInterval(timer);
-  }, [startTime, duration]);
-
-  return (
-    <Box sx={{ width: '100%', mt: 1 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="caption" color="primary">In Progress</Typography>
-        <Typography variant="caption" color="primary">{timeLeft}</Typography>
-      </Box>
-      <LinearProgress 
-        variant="determinate" 
-        value={progress} 
-        sx={{
-          height: 6,
-          borderRadius: 3,
-          backgroundColor: 'rgba(0, 174, 239, 0.2)',
-          '& .MuiLinearProgress-bar': {
-            backgroundColor: '#00AEEF',
-            borderRadius: 3,
-          }
-        }}
-      />
-    </Box>
-  );
-}
-
-function TalkCard({ talk, isCurrentTalk, onClick }) {
-  const [startTime, duration] = talk.time.split('-')[0].split(':').map(Number);
-  const today = new Date();
-  const talkDate = new Date(talk.date);
-  const talkStartTime = new Date(
-    talkDate.getFullYear(),
-    talkDate.getMonth(),
-    talkDate.getDate(),
-    startTime,
-    duration
-  );
-
-  const talkDuration = 90; // Assuming 90 minutes duration for each talk
+function TalkCard({ talk, isCurrentTalk, onClick, isFavorite, onToggleFavorite }) {
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    onToggleFavorite(talk.id);
+  };
 
   return (
     <Card 
       sx={{ 
-        mb: 2, 
-        p: 2,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         cursor: 'pointer',
         backgroundColor: isCurrentTalk ? 'rgba(0, 174, 239, 0.1)' : 'background.paper',
         '&:hover': {
@@ -111,56 +47,75 @@ function TalkCard({ talk, isCurrentTalk, onClick }) {
           boxShadow: '0 6px 12px rgba(0, 174, 239, 0.15)',
         },
         transition: 'all 0.3s ease',
+        position: 'relative',
       }}
       onClick={onClick}
     >
-      <Stack spacing={1}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <Stack spacing={0.5}>
-            <Chip 
-              label={talk.track}
-              size="small"
-              sx={{ 
-                backgroundColor: 'rgba(0, 174, 239, 0.2)',
-                color: '#00AEEF',
-                fontWeight: 500,
-                maxWidth: 'fit-content'
-              }}
-            />
-            <Typography variant="h6" sx={{ color: 'text.primary' }}>
+      <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Stack spacing={1} sx={{ flex: 1 }}>
+            <Typography variant="h6" sx={{ 
+              color: 'text.primary',
+              fontSize: '1.1rem',
+              lineHeight: 1.3,
+              mb: 1
+            }}>
               {talk.title}
             </Typography>
           </Stack>
+          <IconButton 
+            onClick={handleFavoriteClick}
+            sx={{ 
+              color: isFavorite ? 'primary.main' : 'text.secondary',
+              padding: '4px'
+            }}
+          >
+            {isFavorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+          </IconButton>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar 
-            src={speakers.find(s => s.name === talk.speaker)?.image}
-            sx={{ width: 24, height: 24 }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            {talk.speaker}
-          </Typography>
-        </Box>
-
-        <Stack direction="row" spacing={2} sx={{ color: 'text.secondary' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <AccessTimeIcon fontSize="small" />
-            <Typography variant="body2">{talk.time}</Typography>
+        <Stack spacing={2} sx={{ mt: 'auto' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AccessTimeIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="body2" color="text.secondary">
+              {talk.time}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>•</Typography>
+            <RoomIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="body2" color="text.secondary">
+              {talk.room}
+            </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <RoomIcon fontSize="small" />
-            <Typography variant="body2">{talk.room}</Typography>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar 
+              src={speakers.find(s => s.name === talk.speaker)?.image}
+              sx={{ width: 24, height: 24 }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {talk.speaker}
+            </Typography>
           </Box>
         </Stack>
 
         {isCurrentTalk && (
-          <TimeProgress 
-            startTime={talkStartTime.toISOString()} 
-            duration={talkDuration}
-          />
+          <Box sx={{ mt: 2 }}>
+            <LinearProgress 
+              variant="determinate" 
+              value={70}
+              sx={{
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: 'rgba(0, 174, 239, 0.2)',
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: '#00AEEF',
+                  borderRadius: 2,
+                }
+              }}
+            />
+          </Box>
         )}
-      </Stack>
+      </Box>
     </Card>
   );
 }
@@ -173,37 +128,12 @@ export default function Agenda() {
 
   const conferenceDays = [...new Set(agenda.map(talk => talk.date))].sort();
 
-  const toggleFavorite = (event, id) => {
-    event.stopPropagation();
+  const toggleFavorite = (id) => {
     setFavorites(prev => 
       prev.includes(id) 
         ? prev.filter(fav => fav !== id)
         : [...prev, id]
     );
-  };
-
-  const isCurrentTalk = (talk) => {
-    const now = new Date();
-    const [startHour, startMinute] = talk.time.split('-')[0].split(':').map(Number);
-    const [endHour, endMinute] = talk.time.split('-')[1].split(':').map(Number);
-    
-    const talkDate = new Date(talk.date);
-    const startTime = new Date(
-      talkDate.getFullYear(),
-      talkDate.getMonth(),
-      talkDate.getDate(),
-      startHour,
-      startMinute
-    );
-    const endTime = new Date(
-      talkDate.getFullYear(),
-      talkDate.getMonth(),
-      talkDate.getDate(),
-      endHour,
-      endMinute
-    );
-
-    return now >= startTime && now <= endTime;
   };
 
   const filteredAgenda = agenda
@@ -217,44 +147,52 @@ export default function Agenda() {
 
   return (
     <Box sx={{ p: 2 }}>
-      <Tabs 
-        value={selectedDay} 
-        onChange={(_, newValue) => setSelectedDay(newValue)}
-        variant="fullWidth"
-        sx={{ mb: 3 }}
-      >
-        {conferenceDays.map((date, index) => (
-          <Tab 
-            key={date} 
-            label={`Day ${index + 1}`}
-            sx={{
-              '&.Mui-selected': {
-                color: '#00AEEF',
-              }
-            }}
-          />
-        ))}
-      </Tabs>
+      <Box sx={{ mb: 3 }}>
+        <Tabs 
+          value={selectedDay} 
+          onChange={(_, newValue) => setSelectedDay(newValue)}
+          variant="fullWidth"
+        >
+          {conferenceDays.map((date, index) => (
+            <Tab 
+              key={date} 
+              label={`Day ${index + 1}`}
+              sx={{
+                '&.Mui-selected': {
+                  color: '#00AEEF',
+                }
+              }}
+            />
+          ))}
+        </Tabs>
+      </Box>
 
-      <FormControlLabel
-        control={
-          <Switch
-            checked={showFavorites}
-            onChange={(e) => setShowFavorites(e.target.checked)}
-          />
-        }
-        label="Show Favorites Only"
-        sx={{ mb: 2, color: 'text.secondary' }}
-      />
-      
-      {filteredAgenda.map(talk => (
-        <TalkCard
-          key={talk.id}
-          talk={talk}
-          isCurrentTalk={isCurrentTalk(talk)}
-          onClick={() => setSelectedTalk(talk)}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showFavorites}
+              onChange={(e) => setShowFavorites(e.target.checked)}
+            />
+          }
+          label="Show Favorites Only"
+          sx={{ color: 'text.secondary' }}
         />
-      ))}
+      </Box>
+
+      <Grid container spacing={2}>
+        {filteredAgenda.map(talk => (
+          <Grid item xs={12} sm={6} key={talk.id}>
+            <TalkCard
+              talk={talk}
+              isCurrentTalk={false}
+              onClick={() => setSelectedTalk(talk)}
+              isFavorite={favorites.includes(talk.id)}
+              onToggleFavorite={toggleFavorite}
+            />
+          </Grid>
+        ))}
+      </Grid>
 
       <Dialog 
         open={Boolean(selectedTalk)} 
@@ -326,7 +264,7 @@ export default function Agenda() {
               <Button onClick={() => setSelectedTalk(null)}>Close</Button>
               <Button 
                 variant="contained" 
-                onClick={(e) => toggleFavorite(e, selectedTalk.id)}
+                onClick={() => toggleFavorite(selectedTalk.id)}
                 startIcon={favorites.includes(selectedTalk.id) ? <StarIcon /> : <StarBorderIcon />}
               >
                 {favorites.includes(selectedTalk.id) ? 'Remove from Favorites' : 'Add to Favorites'}
