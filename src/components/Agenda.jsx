@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { agenda } from '../data/agenda';
 import { 
   Box, 
@@ -16,22 +16,160 @@ import {
   Button,
   Chip,
   Avatar,
-  Divider
+  Divider,
+  Stack,
+  LinearProgress
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import RoomIcon from '@mui/icons-material/Room';
 import PersonIcon from '@mui/icons-material/Person';
-import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import { format } from 'date-fns';
+import { format, parseISO, addMinutes, differenceInMinutes, differenceInSeconds } from 'date-fns';
 import { speakers } from '../data/speakers';
+
+function TimeProgress({ startTime, duration }) {
+  const [progress, setProgress] = useState(0);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const updateProgress = () => {
+      const now = new Date();
+      const start = parseISO(startTime);
+      const end = addMinutes(start, duration);
+
+      // Calculate progress
+      const totalDuration = duration * 60; // in seconds
+      const elapsed = differenceInSeconds(now, start);
+      const progressValue = (elapsed / totalDuration) * 100;
+      
+      // Calculate time left
+      const minutesLeft = differenceInMinutes(end, now);
+      
+      if (minutesLeft > 0) {
+        setTimeLeft(`${minutesLeft} min left`);
+        setProgress(Math.min(progressValue, 100));
+      } else {
+        setTimeLeft('Ended');
+        setProgress(100);
+      }
+    };
+
+    updateProgress();
+    const timer = setInterval(updateProgress, 1000);
+
+    return () => clearInterval(timer);
+  }, [startTime, duration]);
+
+  return (
+    <Box sx={{ width: '100%', mt: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        <Typography variant="caption" color="primary">In Progress</Typography>
+        <Typography variant="caption" color="primary">{timeLeft}</Typography>
+      </Box>
+      <LinearProgress 
+        variant="determinate" 
+        value={progress} 
+        sx={{
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: 'rgba(0, 174, 239, 0.2)',
+          '& .MuiLinearProgress-bar': {
+            backgroundColor: '#00AEEF',
+            borderRadius: 3,
+          }
+        }}
+      />
+    </Box>
+  );
+}
+
+function TalkCard({ talk, isCurrentTalk, onClick }) {
+  const [startTime, duration] = talk.time.split('-')[0].split(':').map(Number);
+  const today = new Date();
+  const talkDate = new Date(talk.date);
+  const talkStartTime = new Date(
+    talkDate.getFullYear(),
+    talkDate.getMonth(),
+    talkDate.getDate(),
+    startTime,
+    duration
+  );
+
+  const talkDuration = 90; // Assuming 90 minutes duration for each talk
+
+  return (
+    <Card 
+      sx={{ 
+        mb: 2, 
+        p: 2,
+        cursor: 'pointer',
+        backgroundColor: isCurrentTalk ? 'rgba(0, 174, 239, 0.1)' : 'background.paper',
+        '&:hover': {
+          backgroundColor: isCurrentTalk ? 'rgba(0, 174, 239, 0.15)' : 'action.hover',
+          transform: 'translateY(-2px)',
+          boxShadow: '0 6px 12px rgba(0, 174, 239, 0.15)',
+        },
+        transition: 'all 0.3s ease',
+      }}
+      onClick={onClick}
+    >
+      <Stack spacing={1}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Stack spacing={0.5}>
+            <Chip 
+              label={talk.track}
+              size="small"
+              sx={{ 
+                backgroundColor: 'rgba(0, 174, 239, 0.2)',
+                color: '#00AEEF',
+                fontWeight: 500,
+                maxWidth: 'fit-content'
+              }}
+            />
+            <Typography variant="h6" sx={{ color: 'text.primary' }}>
+              {talk.title}
+            </Typography>
+          </Stack>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar 
+            src={speakers.find(s => s.name === talk.speaker)?.image}
+            sx={{ width: 24, height: 24 }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            {talk.speaker}
+          </Typography>
+        </Box>
+
+        <Stack direction="row" spacing={2} sx={{ color: 'text.secondary' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <AccessTimeIcon fontSize="small" />
+            <Typography variant="body2">{talk.time}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <RoomIcon fontSize="small" />
+            <Typography variant="body2">{talk.room}</Typography>
+          </Box>
+        </Stack>
+
+        {isCurrentTalk && (
+          <TimeProgress 
+            startTime={talkStartTime.toISOString()} 
+            duration={talkDuration}
+          />
+        )}
+      </Stack>
+    </Card>
+  );
+}
 
 export default function Agenda() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [selectedDay, setSelectedDay] = useState(0);
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedTalk, setSelectedTalk] = useState(null);
 
   const conferenceDays = [...new Set(agenda.map(talk => talk.date))].sort();
 
@@ -44,25 +182,38 @@ export default function Agenda() {
     );
   };
 
+  const isCurrentTalk = (talk) => {
+    const now = new Date();
+    const [startHour, startMinute] = talk.time.split('-')[0].split(':').map(Number);
+    const [endHour, endMinute] = talk.time.split('-')[1].split(':').map(Number);
+    
+    const talkDate = new Date(talk.date);
+    const startTime = new Date(
+      talkDate.getFullYear(),
+      talkDate.getMonth(),
+      talkDate.getDate(),
+      startHour,
+      startMinute
+    );
+    const endTime = new Date(
+      talkDate.getFullYear(),
+      talkDate.getMonth(),
+      talkDate.getDate(),
+      endHour,
+      endMinute
+    );
+
+    return now >= startTime && now <= endTime;
+  };
+
   const filteredAgenda = agenda
     .filter(talk => talk.date === conferenceDays[selectedDay])
     .filter(talk => !showFavorites || favorites.includes(talk.id))
-    .sort((a, b) => a.time.localeCompare(b.time));
-
-  const formatDate = (dateString) => {
-    return format(new Date(dateString), 'EEE, MMM d');
-  };
-
-  const getSpeakerDetails = (speakerName) => {
-    return speakers.find(s => s.name === speakerName);
-  };
-
-  const handleSessionClick = (session) => {
-    setSelectedSession({
-      ...session,
-      speakerDetails: getSpeakerDetails(session.speaker)
+    .sort((a, b) => {
+      const timeA = a.time.split('-')[0];
+      const timeB = b.time.split('-')[0];
+      return timeA.localeCompare(timeB);
     });
-  };
 
   return (
     <Box sx={{ p: 2 }}>
@@ -73,15 +224,17 @@ export default function Agenda() {
         sx={{ mb: 3 }}
       >
         {conferenceDays.map((date, index) => (
-          <Tab key={date} label={`Day ${index + 1}`} />
+          <Tab 
+            key={date} 
+            label={`Day ${index + 1}`}
+            sx={{
+              '&.Mui-selected': {
+                color: '#00AEEF',
+              }
+            }}
+          />
         ))}
       </Tabs>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" color="primary">
-          {formatDate(conferenceDays[selectedDay])}
-        </Typography>
-      </Box>
 
       <FormControlLabel
         control={
@@ -91,126 +244,93 @@ export default function Agenda() {
           />
         }
         label="Show Favorites Only"
-        sx={{ mb: 2 }}
+        sx={{ mb: 2, color: 'text.secondary' }}
       />
       
       {filteredAgenda.map(talk => (
-        <Card 
-          key={talk.id} 
-          sx={{ 
-            mb: 2, 
-            p: 2, 
-            cursor: 'pointer',
-            '&:hover': {
-              bgcolor: 'action.hover',
-              transition: 'background-color 0.2s'
-            }
-          }}
-          onClick={() => handleSessionClick(talk)}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Box>
-              <Typography variant="h6">{talk.title}</Typography>
-              <Typography>{talk.speaker}</Typography>
-              <Typography color="text.secondary">{talk.time} - {talk.room}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {talk.abstract}
-              </Typography>
-            </Box>
-            <IconButton 
-              onClick={(e) => toggleFavorite(e, talk.id)}
-              color="primary"
-            >
-              {favorites.includes(talk.id) ? <StarIcon /> : <StarBorderIcon />}
-            </IconButton>
-          </Box>
-        </Card>
+        <TalkCard
+          key={talk.id}
+          talk={talk}
+          isCurrentTalk={isCurrentTalk(talk)}
+          onClick={() => setSelectedTalk(talk)}
+        />
       ))}
 
-      {filteredAgenda.length === 0 && (
-        <Typography color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
-          No sessions found for this day
-          {showFavorites && " in favorites"}
-        </Typography>
-      )}
-
       <Dialog 
-        open={Boolean(selectedSession)} 
-        onClose={() => setSelectedSession(null)}
+        open={Boolean(selectedTalk)} 
+        onClose={() => setSelectedTalk(null)}
         maxWidth="sm"
         fullWidth
       >
-        {selectedSession && (
+        {selectedTalk && (
           <>
             <DialogTitle>
-              <Typography variant="h5" gutterBottom>
-                {selectedSession.title}
-              </Typography>
-              <Chip 
-                icon={<LocalOfferIcon />} 
-                label={selectedSession.track}
-                size="small"
-                color="primary"
-                sx={{ mt: 1 }}
-              />
+              <Stack spacing={1}>
+                <Chip 
+                  label={selectedTalk.track}
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'rgba(0, 174, 239, 0.2)',
+                    color: '#00AEEF',
+                    fontWeight: 500,
+                    maxWidth: 'fit-content'
+                  }}
+                />
+                <Typography variant="h6">{selectedTalk.title}</Typography>
+              </Stack>
             </DialogTitle>
             <DialogContent>
-              <Box sx={{ mb: 3 }}>
-                {selectedSession.speakerDetails && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Avatar 
-                      src={selectedSession.speakerDetails.image}
-                      sx={{ width: 80, height: 80, mr: 2 }}
-                    >
-                      <PersonIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6">
-                        {selectedSession.speakerDetails.name}
-                      </Typography>
-                      <Typography color="text.secondary">
-                        {selectedSession.speakerDetails.title}
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AccessTimeIcon color="action" />
-                    <Typography>
-                      {selectedSession.time} on {formatDate(selectedSession.date)}
+              <Stack spacing={3}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar 
+                    src={speakers.find(s => s.name === selectedTalk.speaker)?.image}
+                    sx={{ width: 60, height: 60 }}
+                  />
+                  <Box>
+                    <Typography variant="h6">{selectedTalk.speaker}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {speakers.find(s => s.name === selectedTalk.speaker)?.title}
                     </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <RoomIcon color="action" />
-                    <Typography>{selectedSession.room}</Typography>
                   </Box>
                 </Box>
 
-                <Divider sx={{ my: 2 }} />
+                <Divider />
 
-                <Typography variant="h6" gutterBottom>
-                  About this Session
-                </Typography>
-                <Typography paragraph>
-                  {selectedSession.abstract}
-                </Typography>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Time & Location
+                    </Typography>
+                    <Stack direction="row" spacing={3}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AccessTimeIcon color="primary" />
+                        <Typography>{selectedTalk.time}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <RoomIcon color="primary" />
+                        <Typography>{selectedTalk.room}</Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
 
-                {selectedSession.speakerDetails?.bio && (
-                  <>
-                    <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-                      About the Speaker
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Abstract
                     </Typography>
-                    <Typography>
-                      {selectedSession.speakerDetails.bio}
-                    </Typography>
-                  </>
-                )}
-              </Box>
+                    <Typography>{selectedTalk.abstract}</Typography>
+                  </Box>
+                </Stack>
+              </Stack>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setSelectedSession(null)}>Close</Button>
+              <Button onClick={() => setSelectedTalk(null)}>Close</Button>
+              <Button 
+                variant="contained" 
+                onClick={(e) => toggleFavorite(e, selectedTalk.id)}
+                startIcon={favorites.includes(selectedTalk.id) ? <StarIcon /> : <StarBorderIcon />}
+              >
+                {favorites.includes(selectedTalk.id) ? 'Remove from Favorites' : 'Add to Favorites'}
+              </Button>
             </DialogActions>
           </>
         )}
