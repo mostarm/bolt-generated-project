@@ -1,27 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontSize: '28px',
-      fontWeight: 700,
-    },
-    h2: {
-      fontSize: '24px',
-      fontWeight: 700,
-    },
-    h6: {
-      fontSize: '20px',
-      fontWeight: 600,
-    },
-    body1: {
-      fontSize: '16px',
-    },
-    body2: {
-      fontSize: '14px',
-    },
-  },
   palette: {
     mode: 'dark',
     primary: {
@@ -36,7 +15,7 @@ const theme = createTheme({
     },
     background: {
       default: '#121212',
-      paper: '#1C1C1C',
+      paper: '#1B2332',
     },
     text: {
       primary: '#EAEAEA',
@@ -72,10 +51,37 @@ const theme = createTheme({
         },
       },
     },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1B2332',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        }
+      }
+    },
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          minHeight: '64px',
+          '@media (min-width: 600px)': {
+            minHeight: '64px',
+          },
+        }
+      }
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontSize: '0.9rem',
+          fontWeight: 500,
+        }
+      }
+    },
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1C1C1C',
+          backgroundColor: '#1B2332',
           backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05))',
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
           backdropFilter: 'blur(10px)',
@@ -87,56 +93,13 @@ const theme = createTheme({
         },
       },
     },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: '8px',
-          transition: 'all 0.3s ease',
-          '&:hover': {
-            boxShadow: '0 0 15px rgba(0, 174, 239, 0.4)',
-          },
-        },
-        contained: {
-          backgroundImage: 'linear-gradient(45deg, #00AEEF, #0099D6)',
-          '&:hover': {
-            backgroundImage: 'linear-gradient(45deg, #33BEFF, #00AEEF)',
-          },
-        },
-        outlined: {
-          borderColor: '#00AEEF',
-          '&:hover': {
-            borderColor: '#33BEFF',
-            backgroundColor: 'rgba(0, 174, 239, 0.1)',
-          },
-        },
-      },
-    },
     MuiDialog: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#1C1C1C',
+          backgroundColor: '#1B2332',
           backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05))',
           backdropFilter: 'blur(10px)',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        },
-      },
-    },
-    MuiBottomNavigation: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#1C1C1C',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-        },
-      },
-    },
-    MuiBottomNavigationAction: {
-      styleOverrides: {
-        root: {
-          color: '#B3B3B3',
-          '&.Mui-selected': {
-            color: '#00AEEF',
-          },
         },
       },
     },

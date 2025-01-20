@@ -1,4 +1,4 @@
-import { BottomNavigation, BottomNavigationAction } from '@mui/material';
+import { AppBar, Toolbar, Button, Box, Typography } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PeopleIcon from '@mui/icons-material/People';
@@ -10,43 +10,90 @@ export default function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const getPathValue = () => {
-    const path = location.pathname;
-    switch (path) {
-      case '/': return 0;
-      case '/speakers': return 1;
-      case '/sponsors': return 2;
-      case '/notifications': return 3;
-      case '/more': return 4;
-      default: return 0;
-    }
-  };
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <BottomNavigation
-      value={getPathValue()}
-      onChange={(_, newValue) => {
-        switch (newValue) {
-          case 0: navigate('/'); break;
-          case 1: navigate('/speakers'); break;
-          case 2: navigate('/sponsors'); break;
-          case 3: navigate('/notifications'); break;
-          case 4: navigate('/more'); break;
-        }
-      }}
+    <AppBar 
+      position="fixed" 
+      elevation={0}
       sx={{
-        width: '100%',
-        position: 'fixed',
-        bottom: 0,
-        borderTop: 1,
-        borderColor: 'divider'
+        top: 0,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
       }}
     >
-      <BottomNavigationAction label="Agenda" icon={<CalendarTodayIcon />} />
-      <BottomNavigationAction label="Speakers" icon={<PeopleIcon />} />
-      <BottomNavigationAction label="Sponsors" icon={<BusinessIcon />} />
-      <BottomNavigationAction label="Notifications" icon={<NotificationsIcon />} />
-      <BottomNavigationAction label="More" icon={<MoreHorizIcon />} />
-    </BottomNavigation>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ 
+            color: '#00AEEF',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+          onClick={() => navigate('/')}
+        >
+          QED
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            startIcon={<CalendarTodayIcon />}
+            onClick={() => navigate('/')}
+            sx={{
+              color: isActive('/') ? '#00AEEF' : 'text.secondary',
+              '&:hover': { color: '#00AEEF' },
+            }}
+          >
+            Agenda
+          </Button>
+
+          <Button
+            startIcon={<PeopleIcon />}
+            onClick={() => navigate('/speakers')}
+            sx={{
+              color: isActive('/speakers') ? '#00AEEF' : 'text.secondary',
+              '&:hover': { color: '#00AEEF' },
+            }}
+          >
+            Speakers
+          </Button>
+
+          <Button
+            startIcon={<BusinessIcon />}
+            onClick={() => navigate('/sponsors')}
+            sx={{
+              color: isActive('/sponsors') ? '#00AEEF' : 'text.secondary',
+              '&:hover': { color: '#00AEEF' },
+            }}
+          >
+            Sponsors
+          </Button>
+
+          <Button
+            startIcon={<NotificationsIcon />}
+            onClick={() => navigate('/notifications')}
+            sx={{
+              color: isActive('/notifications') ? '#00AEEF' : 'text.secondary',
+              '&:hover': { color: '#00AEEF' },
+            }}
+          >
+            Notifications
+          </Button>
+
+          <Button
+            startIcon={<MoreHorizIcon />}
+            onClick={() => navigate('/more')}
+            sx={{
+              color: isActive('/more') ? '#00AEEF' : 'text.secondary',
+              '&:hover': { color: '#00AEEF' },
+            }}
+          >
+            More
+          </Button>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }
